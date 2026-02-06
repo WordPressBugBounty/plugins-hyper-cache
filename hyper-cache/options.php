@@ -1,4 +1,6 @@
 <?php
+defined('ABSPATH') || exit;
+
 $controls = new HyperCacheControls();
 $plugin = HyperCache::$instance;
 
@@ -24,10 +26,6 @@ if ($controls->is_action('save')) {
     if (!is_numeric($controls->options['browser_cache_hours'])) {
         $controls->options['browser_cache_hours'] = 0;
     }
-
-    // Mobile Agents
-    $controls->options['mobile_agents'] = strtolower(trim($controls->options['mobile_agents']));
-    $controls->options['mobile_agents'] = $plugin->text_to_list($controls->options['mobile_agents']);
 
     // Rejected Agents
     $controls->options['reject_agents'] = strtolower(trim($controls->options['reject_agents']));
@@ -82,7 +80,7 @@ if ($controls->is_action('clean')) {
     $folder = $plugin->get_folder();
     $plugin->remove_dir($folder . '');
     do_action('hyper_cache_flush_all');
-     $controls->messages = __('The cache folder has been cleaned.', 'hyper-cache');
+    $controls->messages = __('The cache folder has been cleaned.', 'hyper-cache');
 }
 
 if ($controls->is_action('autoclean')) {
@@ -98,10 +96,6 @@ if ($controls->is_action('clean-home')) {
     @unlink($folder . '/index.html.gz');
     @unlink($folder . '/index-https.html');
     @unlink($folder . '/index-https.html.gz');
-    @unlink($folder . '/index-mobile.html');
-    @unlink($folder . '/index-mobile.html.gz');
-    @unlink($folder . '/index-https-mobile.html');
-    @unlink($folder . '/index-https-mobile.html.gz');
     @unlink($folder . '/robots.txt');
     $plugin->remove_dir($folder . '/feed/');
     $plugin->remove_dir($folder . '/page/');
@@ -132,11 +126,6 @@ if ($controls->is_action('size')) {
     $controls->messages = __('Cache size', 'hyper-cache') . ': ' . size_format((hc_size($folder . '/')));
 }
 
-if ($controls->is_action('reset_mobile_agents')) {
-    $controls->options['mobile_agents'] = explode('|', HyperCache::MOBILE_AGENTS);
-}
-
-
 function hc_size($dir) {
     $files = glob($dir . '*', GLOB_MARK);
     $size = 0;
@@ -160,9 +149,8 @@ wp_mkdir_p($plugin->get_folder());
 
 // Sometime it happens that a scheduled job is lost...
 if (!wp_next_scheduled('hyper_cache_clean')) {
-    wp_schedule_event(time()+300, 'hourly', 'hyper_cache_clean');
+    wp_schedule_event(time() + 300, 'hourly', 'hyper_cache_clean');
 }
-
 ?>
 <style>
     .hc-box {
@@ -191,11 +179,11 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
         font-size: 12px;
         text-decoration: none;
     }
-    
+
 </style>
 <script>
-    jQuery(document).ready(function() {
-        jQuery(function() {
+    jQuery(document).ready(function () {
+        jQuery(function () {
             tabs = jQuery("#tabs").tabs({
                 cookie: {
                     expires: 30
@@ -211,7 +199,7 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
     <?php if (!defined('WP_CACHE') || !WP_CACHE) { ?>
         <div class="error">
             <p>
-                <?php _e('You must add to the file wp-config.php (after the <code>&lt;?php</code> first line) the line of code: <code>define("WP_CACHE", true);</code>', 'hyper-cache'); ?>
+                <?php esc_html_e('You must add to the file wp-config.php (after the <code>&lt;?php</code> first line) the line of code: <code>define("WP_CACHE", true);</code>', 'hyper-cache'); ?>
             </p>
         </div>
     <?php } ?>
@@ -219,7 +207,7 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
     <?php if (@filemtime(WP_CONTENT_DIR . '/advanced-cache.php') < @filemtime(dirname(__FILE__) . '/advanced-cache.php')) { ?>
         <div class="error">
             <p>
-                <?php _e('You must save the options since some files must be updated.', 'hyper-cache'); ?>
+                <?php esc_html_e('You must save the options since some files must be updated.', 'hyper-cache'); ?>
             </p>
         </div>
     <?php } ?>
@@ -227,11 +215,9 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
     <?php if (!is_dir($plugin->get_folder())) { ?>
         <div class="error">
             <p>
-                <?php
-                printf(__('Hyper Cache was not able to create or find the %s folder.', 'hyper-cache'),
-                    '<code>' . $plugin->get_folder() . '</code>');
-                _e('Please create it manually with list, write and read permissions (usually 777).', 'hyper-cache');
-                ?>
+                <?php esc_html_e('Unable to create the folder: ', 'hyper-cache'); ?>
+                <code><?= esc_html($plugin->get_folder()) ?></code>
+                <?php esc_html_e('Please create it manually.', 'hyper-cache'); ?>
 
             </p>
         </div>
@@ -240,15 +226,15 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
     <?php if (get_option('permalink_structure') == '') { ?>
         <div class="error">
             <p>
-                 <?php
-                _e('You should choose a different permalink structure.', 'hyper-cache');
-                _e('Change it on the <a href="options-permalink.php" target="_blank">permalink panel</a> otherwise Hyper Cache cannot work properly.', 'hyper-cache');
+                <?php
+                esc_html_e('You should choose a different permalink structure.', 'hyper-cache');
+                esc_html_e('Change it on the <a href="options-permalink.php" target="_blank">permalink panel</a> otherwise Hyper Cache cannot work properly.', 'hyper-cache');
                 ?>
             </p>
         </div>
     <?php } ?>
-    
-    
+
+
 
 
     <?php $controls->show(); ?>
@@ -276,15 +262,14 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
 
         <div id="tabs">
             <ul>
-                <li><a href="#tabs-general"><?php _e('General', 'hyper-cache'); ?></a></li>
-                <li><a href="#tabs-rejects"><?php _e('Bypasses', 'hyper-cache'); ?></a></li>
-                <li><a href="#tabs-mobile"><?php _e('Mobile', 'hyper-cache'); ?></a></li>
-                <li><a href="#tabs-advanced"><?php _e('Advanced', 'hyper-cache'); ?></a></li>
-                <li><a href="#tabs-cdn"><?php _e('CDN', 'hyper-cache'); ?></a></li>
+                <li><a href="#tabs-general"><?php esc_html_e('General', 'hyper-cache'); ?></a></li>
+                <li><a href="#tabs-rejects"><?php esc_html_e('Bypasses', 'hyper-cache'); ?></a></li>
+                <li><a href="#tabs-advanced"><?php esc_html_e('Advanced', 'hyper-cache'); ?></a></li>
+                <li><a href="#tabs-cdn"><?php esc_html_e('CDN', 'hyper-cache'); ?></a></li>
             </ul>
 
             <div id="tabs-cdn">
-                <p><?php _e('It works only with images, css, scripts.', 'hyper-cache'); ?></p>
+                <p><?php esc_html_e('It works only with images, css, scripts.', 'hyper-cache'); ?></p>
                 <table class="form-table">
                     <tr>
                         <th>&nbsp;</th>
@@ -297,10 +282,10 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
                         <td>
                             <?php $controls->text('cdn_url', 50); ?>
                             <p class="description">
-                                <?php _e('Write here the CDN URL.', 'hyper-cache'); ?>
-                                <?php _e('For example a MaxCDN URL is something like', 'hyper-cache'); ?>
+                                <?php esc_html_e('Write here the CDN URL.', 'hyper-cache'); ?>
+                                <?php esc_html_e('For example a MaxCDN URL is something like', 'hyper-cache'); ?>
                                 <code>http://foo.bar.netdna-cdn.com</code>.
-                                <?php _e('You should usually create a pull zone in your CDN panel and they will give your an URL.', 'hyper-cache'); ?>
+                                <?php esc_html_e('You should usually create a pull zone in your CDN panel and they will give your an URL.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
@@ -315,28 +300,28 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
 
                 <table class="form-table">
                     <tr>
-                        <th><?php _e('Cached pages will be valid for', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Cached pages will be valid for', 'hyper-cache'); ?></th>
                         <td>
-                            <?php $controls->text('max_age'); ?><?php _e('hours', 'hyper-cache'); ?>
-                            <p class="description"><?php _e('0 means forever.', 'hyper-cache'); ?></p>
+                            <?php $controls->text('max_age'); ?><?php esc_html_e('hours', 'hyper-cache'); ?>
+                            <p class="description"><?php esc_html_e('0 means forever.', 'hyper-cache'); ?></p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Enable compression', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Enable compression', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('gzip'); ?>
 
                             <p class="description">
-                                <?php _e('If you note odd characters when enabled, disable it since your server is already compressing the pages.', 'hyper-cache'); ?>
-                                <?php _e('If your server has mod_pagespeed, leave the compression disabled otherwise the module cannot optimize the page.', 'hyper-cache'); ?>
+                                <?php esc_html_e('If you note odd characters when enabled, disable it since your server is already compressing the pages.', 'hyper-cache'); ?>
+                                <?php esc_html_e('If your server has mod_pagespeed, leave the compression disabled otherwise the module cannot optimize the page.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
-                    
-                    
+
+
 
                     <tr>
-                        <th><?php _e('When a post is edited', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('When a post is edited', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('clean_archives_on_post_edit'); ?> clean archives (categories, tags, ..., but not the home)
                             <br>
@@ -347,42 +332,44 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
                         </td>
                     </tr>
 
-                 
 
-                   
+
+
                     <tr valign="top">
-                        <th><?php _e('Allow browser caching', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Allow browser caching', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('browser_cache', __('Enable', 'hyper-cache')); ?>
 
                             with an expire time of <?php $controls->text('browser_cache_hours', 5); ?> hours
                             <p class="description">
-                                <?php _e('Lets browser to use a local copy of the page if newer than specified.', 'hyper-cache'); ?>
-                                <?php _e('Attention: the browser may not reload a page from the blog showing not updated content. ', 'hyper-cache'); ?>
+                                <?php esc_html_e('Lets browser to use a local copy of the page if newer than specified.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Attention: the browser may not reload a page from the blog showing not updated content. ', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
-                   
+
 
                     <tr valign="top">
-                        <th><?php _e('HTTPS', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('HTTPS', 'hyper-cache'); ?></th>
                         <td>
-                            <?php $controls->select('https', array(0 => __('Bypass the cache', 'hyper-cache'),
+                            <?php
+                            $controls->select('https', array(0 => __('Bypass the cache', 'hyper-cache'),
                                 1 => __('Build a separated cache', 'hyper-cache'),
-                                2 => __('Use the standard cache (I have HTTP/HTTPS aware pages)', 'hyper-cache'))); ?>
+                                2 => __('Use the standard cache (I have HTTP/HTTPS aware pages)', 'hyper-cache')));
+                            ?>
                             <p class="description">
-                                <?php _e('Pages are usually different when served in HTTP and HTTPS.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Pages are usually different when served in HTTP and HTTPS.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
 
-                   
+
                     <tr>
-                        <th><?php _e('Serve expired pages to bots', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Serve expired pages to bots', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('serve_expired_to_bots', __('Enable', 'hyper-cache')); ?>
                             <p class="description">
-                                <?php _e('Serve a cache page even if expired when requested by bots.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Serve a cache page even if expired when requested by bots.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
@@ -393,138 +380,137 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
             <div id="tabs-rejects">
                 <table class="form-table">
                     <tr>
-                        <th><?php _e('Do not cache the home page', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Do not cache the home page', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_home'); ?>
                             <p class="description">
-                                <?php _e('When active, the home page and its subpages are not cached.', 'hyper-cache'); ?>
-                                <?php _e('Works even with a static home page.', 'hyper-cache'); ?>
+                                <?php esc_html_e('When active, the home page and its subpages are not cached.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Works even with a static home page.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Do not cache the "404 - Not found" page', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Do not cache the "404 - Not found" page', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_404'); ?>
                             <p class="description">
-                                <?php _e('When active, Hyper Cache does not serve a cached "404 not found" page.', 'hyper-cache'); ?>
-                                <?php _e('Requests which lead to a 404 not found page overload you blog since WordPress must generate a full page', 'hyper-cache'); ?>
-                                <?php _e('Caching it help in reduce that overload.', 'hyper-cache'); ?>
+                                <?php esc_html_e('When active, Hyper Cache does not serve a cached "404 not found" page.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Requests which lead to a 404 not found page overload you blog since WordPress must generate a full page', 'hyper-cache'); ?>
+                                <?php esc_html_e('Caching it help in reduce that overload.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Do not cache the blog main feeds', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Do not cache the blog main feeds', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_feeds'); ?>
                             <p class="description">
-                                <?php printf(__('When active, the main blog feed %s is not cached.', 'hyper-cache'),
-                                        '(<code>' . get_option('home') . '/feed</code>)'); ?>
+                                <?php esc_html_e('When active, the main blog feed is not cached.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Do not cache single post comment feed', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Do not cache single post comment feed', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_comment_feeds'); ?>
                             <p class="description">
-                                <?php _e('When active, the single post comment feeds are not cached.', 'hyper-cache'); ?>
-                                <?php _e('Usually I enable this bypass since it saves disk space and comment feed on single posts are not usually used.', 'hyper-cache'); ?>
+                                <?php esc_html_e('When active, the single post comment feeds are not cached.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Usually I enable this bypass since it saves disk space and comment feed on single posts are not usually used.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Do not cache pages with URIs', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Do not cache pages with URIs', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_uris_exact_enabled', __('Enable', 'hyper-cache')); ?><br>
                             <?php $controls->textarea('reject_uris_exact'); ?>
                             <p class="description">
-                                <?php _e('One per line.', 'hyper-cache'); ?>
-                                <?php _e('Those URIs are exactly matched.', 'hyper-cache'); ?>
-                                <?php _e('For example if you add the <code>/my-single-post</code> URI and a request is received for <code>http://youblog.com<strong>/my-single-post</strong></code> that page IS NOT cached.', 'hyper-cache'); ?>
-                                <?php _e('A request for <code>http://youblog.com<strong>/my-single-post-something</strong></code> IS cached.', 'hyper-cache'); ?>
+                                <?php esc_html_e('One per line.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Those URIs are exactly matched.', 'hyper-cache'); ?>
+                                <?php esc_html_e('For example if you add the <code>/my-single-post</code> URI and a request is received for <code>http://youblog.com<strong>/my-single-post</strong></code> that page IS NOT cached.', 'hyper-cache'); ?>
+                                <?php esc_html_e('A request for <code>http://youblog.com<strong>/my-single-post-something</strong></code> IS cached.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Do not cache pages with URIs starting with', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Do not cache pages with URIs starting with', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_uris_enabled', __('Enable', 'hyper-cache')); ?><br>
                             <?php $controls->textarea('reject_uris'); ?>
                             <p class="description">
-                                <?php _e('One per line.', 'hyper-cache'); ?>
-                                <?php _e('Those URIs match if a requested URI starts with one of them.', 'hyper-cache'); ?>
-                                <?php _e('For example if you add the <code>/my-single-post</code> URI and a request is received for <code>http://youblog.com<strong>/my-single-post</strong></code> that page IS NOT cached.', 'hyper-cache'); ?>
+                                <?php esc_html_e('One per line.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Those URIs match if a requested URI starts with one of them.', 'hyper-cache'); ?>
+                                <?php esc_html_e('For example if you add the <code>/my-single-post</code> URI and a request is received for <code>http://youblog.com<strong>/my-single-post</strong></code> that page IS NOT cached.', 'hyper-cache'); ?>
 
-                                <?php _e('A request for <code>http://youblog.com<strong>/my-single-post-something</strong></code> IS NOT cached as well.', 'hyper-cache'); ?>
+                                <?php esc_html_e('A request for <code>http://youblog.com<strong>/my-single-post-something</strong></code> IS NOT cached as well.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Bypass the cache for readers with cookies', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Bypass the cache for readers with cookies', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_cookies_enabled', __('Enable', 'hyper-cache')); ?><br>
                             <?php $controls->textarea('reject_cookies'); ?>
                             <p class="description">
-                                <?php _e('One per line.', 'hyper-cache'); ?>
-                                <?php _e('If the visitor has a cookie named as one of the listed values, the cache is bypassed.', 'hyper-cache'); ?>
+                                <?php esc_html_e('One per line.', 'hyper-cache'); ?>
+                                <?php esc_html_e('If the visitor has a cookie named as one of the listed values, the cache is bypassed.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Bypass the cache for readers with devices (user agents)', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Bypass the cache for readers with devices (user agents)', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_agents_enabled', __('Enable', 'hyper-cache')); ?><br>
                             <?php $controls->textarea('reject_agents'); ?>
                             <p class="description">
-                                <?php _e('One per line.', 'hyper-cache'); ?>
-                                <?php _e('If the visitor has a device with a user agent named as one of the listed values, the cache is bypassed.', 'hyper-cache'); ?>
+                                <?php esc_html_e('One per line.', 'hyper-cache'); ?>
+                                <?php esc_html_e('If the visitor has a device with a user agent named as one of the listed values, the cache is bypassed.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
 
                     <tr>
-                        <th><?php _e('Bypass the cache for readers which are commenters', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Bypass the cache for readers which are commenters', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('reject_comment_authors', __('Enable', 'hyper-cache')); ?>
 
                             <p class="description">
-                                <?php _e('Hyper Cache is able to work with users who left a comment and completes the comment form with
+                                <?php esc_html_e('Hyper Cache is able to work with users who left a comment and completes the comment form with
                                 user data even on cached page', 'hyper-cache'); ?>
-                                <?php _e('(with a small JavaScript added at the end of the pages).', 'hyper-cache'); ?>
-                                <?php _e('But the "awaiting moderation" message cannot be shown.', 'hyper-cache'); ?>
-                                <?php _e('If you have few readers who comment you can disable this feature to get back the classical WordPress comment flow.', 'hyper-cache'); ?>
+                                <?php esc_html_e('(with a small JavaScript added at the end of the pages).', 'hyper-cache'); ?>
+                                <?php esc_html_e('But the "awaiting moderation" message cannot be shown.', 'hyper-cache'); ?>
+                                <?php esc_html_e('If you have few readers who comment you can disable this feature to get back the classical WordPress comment flow.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><?php _e('Do not cache posts older than', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Do not cache posts older than', 'hyper-cache'); ?></th>
                         <td>
-                            <?php $controls->text('reject_old_posts', 5); ?> <?php _e('days', 'hyper-cache'); ?>
+                            <?php $controls->text('reject_old_posts', 5); ?> <?php esc_html_e('days', 'hyper-cache'); ?>
                             <p class="description">
-                                <?php _e('Older posts won\'t be cached and stored resulting in a lower disk space usage.', 'hyper-cache'); ?>
-                                <?php _e('Useful when older posts have low traffic.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Older posts won\'t be cached and stored resulting in a lower disk space usage.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Useful when older posts have low traffic.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
                 </table>
             </div>
-            
+
             <div id="tabs-advanced">
                 <table class="form-table">
                     <tr>
-                        <th><?php _e('Enable on-the-fly compression', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Enable on-the-fly compression', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('gzip_on_the_fly'); ?>
 
                             <p class="description">
-                                <?php _e('Enable on the fly compression for non cached pages.', 'hyper-cache'); ?>
+                                <?php esc_html_e('Enable on the fly compression for non cached pages.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
-                <tr>
                     <tr>
-                        <th><?php _e('When a post receives a comment', 'hyper-cache'); ?></th>
+                    <tr>
+                        <th><?php esc_html_e('When a post receives a comment', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('clean_archives_on_comment'); ?> clean archives (categories, tags, ..., but not the home)
                             <br>
@@ -536,35 +522,35 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
                     </tr>
                     <tr>
 
-                        <th><?php _e('When the home is refreshed, refresh even the', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('When the home is refreshed, refresh even the', 'hyper-cache'); ?></th>
                         <td>
-                            <?php $controls->text('clean_last_posts', 5); ?> <?php _e('latest post', 'hyper-cache'); ?>
+                            <?php $controls->text('clean_last_posts', 5); ?> <?php esc_html_e('latest post', 'hyper-cache'); ?>
                             <p class="description">
-                                <?php _e('The number of latest posts to invalidate when the home is invalidated.', 'hyper-cache'); ?>
+                                <?php esc_html_e('The number of latest posts to invalidate when the home is invalidated.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
-                     
+
                     <tr>
-                        <th><?php _e('Next autoclean will run in', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Next autoclean will run in', 'hyper-cache'); ?></th>
                         <td>
                             <?php $controls->checkbox('autoclean', 'enable it'); ?>
 
-                            (<?php _e('will run again in', 'hyper-cache'); ?> <?php echo (int)((wp_next_scheduled('hyper_cache_clean')-time())/60) ?> <?php _e('minutes', 'hyper-cache'); ?>)
+                            (<?php esc_html_e('will run again in', 'hyper-cache'); ?> <?php echo (int) ((wp_next_scheduled('hyper_cache_clean') - time()) / 60) ?> <?php esc_html_e('minutes', 'hyper-cache'); ?>)
                             <p class="description">
-                                <?php _e('The autoclean process removes old files to save disk space.', 'hyper-cache'); ?>
-                                <?php _e('If you enable the "serve expired pages to bots", you should disable the auto clean.', 'hyper-cache'); ?>
+                                <?php esc_html_e('The autoclean process removes old files to save disk space.', 'hyper-cache'); ?>
+                                <?php esc_html_e('If you enable the "serve expired pages to bots", you should disable the auto clean.', 'hyper-cache'); ?>
                             </p>
                         </td>
                     </tr>
-                    
+
                     <tr>
-                        <th><?php _e('Cache folder', 'hyper-cache'); ?></th>
+                        <th><?php esc_html_e('Cache folder', 'hyper-cache'); ?></th>
                         <td>
                             <?php if (defined('HYPER_CACHE_FOLDER')) { ?>
-                                <?php _e('A custom cache folder is deinfed in wp-config.php', 'hyper-cache'); ?>: <code><?php echo esc_html(HYPER_CACHE_FOLDER)?></code>
+                                <?php esc_html_e('A custom cache folder is deinfed in wp-config.php', 'hyper-cache'); ?>: <code><?php echo esc_html(HYPER_CACHE_FOLDER) ?></code>
                             <?php } else { ?>
-                                <?php _e('A custom cache folder can be defined in wp-config.php', 'hyper-cache'); ?>
+                                <?php esc_html_e('A custom cache folder can be defined in wp-config.php', 'hyper-cache'); ?>
                                 <code>define('HYPER_CACHE_FOLDER', '/path/to/cache/folder');</code>
                             <?php } ?>
                         </td>
@@ -572,64 +558,13 @@ if (!wp_next_scheduled('hyper_cache_clean')) {
                 </table>
             </div>
 
-            <div id="tabs-mobile">
-                <p>
-                    Obsolete, will be removed shortly. Site's theme should be responsive there is no need to detect the device type
-                    server-side.
-                </p>
-                <table class="form-table">
-                    <tr>
-                        <th><?php _e('For mobile devices', 'hyper-cache'); ?></th>
-                        <td>
-                            <?php $controls->select('mobile', array(0 => __('Use the main cache', 'hyper-cache'),
-                                1 => __('Use a separated cache', 'hyper-cache'),
-                                2 => __('Bypass the cache', 'hyper-cache'))); ?>
-
-                            <p class="description">
-                                <?php _e('Choose "cache separately" if you produce different content for mobile devices', 'hyper-cache'); ?><br>
-                                <?php _e('See for example my <a href="http://www.satollo.net/plugins/header-footer" target="_blank">Header and Footer</a> plugin for different desktop/mobile ads injection in posts.', 'hyper-cache'); ?>
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><?php _e('Mobile theme', 'hyper-cache'); ?></th>
-                        <td>
-                            <?php
-                            $themes = wp_get_themes();
-                            //var_dump($themes);
-                            $list = array('' => __('Use the active blog theme', 'hyper-cache'));
-                            foreach ($themes as $theme)
-                                $list[$theme->stylesheet] = $theme->name;
-                            ?>
-                            <?php $controls->select('theme', $list); ?>
-                            <p class="description">
-                                <?php _e('If you have plugins which produce different content for desktop and mobile devices, you should use a separate cache for mobile.', 'hyper-cache'); ?>
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><?php _e('Mobile user agents', 'hyper-cache'); ?></th>
-                        <td>
-                            <?php $controls->textarea('mobile_agents'); ?>
-                            <?php $controls->button('reset_mobile_agents', __('Reset', 'hyper-cache' )); ?>
-                            <p class="description">
-                                <?php _e('One per line.', 'hyper-cache'); ?>
-                                <?php _e('A "user agent" is a text which identify the kind of device used to surf the site.', 'hyper-cache'); ?>
-                                <?php _e('For example and iPhone has <code>iphone</code> as user agent.', 'hyper-cache'); ?>
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-
-
         </div>
         <p>
             <?php $controls->button('save', __('Save', 'hyper-cache')); ?>
 
             <?php if ($_SERVER['HTTP_HOST'] == 'www.satollo.net' || $_SERVER['HTTP_HOST'] == 'www.satollo.com') { ?>
-            <?php $controls->button('delete', 'Delete options'); ?>
-            <?php $controls->button('autoclean', 'Autoclean'); ?>
+                <?php $controls->button('delete', 'Delete options'); ?>
+                <?php $controls->button('autoclean', 'Autoclean'); ?>
             <?php } ?>
         </p>
 
@@ -662,8 +597,8 @@ class HyperCacheControls {
         $value = $this->options[$name];
         if (is_array($value))
             $value = implode(',', $value);
-        echo '<input name="options[' . $name . ']" type="text" size="' . $size . '" value="';
-        echo htmlspecialchars($value);
+        echo '<input name="options[' . esc_attr($name) . ']" type="text" size="' . esc_attr($size) . '" value="';
+        echo esc_attr($value);
         echo '"/>';
     }
 
@@ -671,11 +606,11 @@ class HyperCacheControls {
         if (!isset($this->options[$name]))
             $this->options[$name] = '';
         $value = $this->options[$name];
-        echo '<label><input class="panel_checkbox" name="options[' . $name . ']" type="checkbox" value="1"';
+        echo '<label><input class="panel_checkbox" name="options[' . esc_attr($name) . ']" type="checkbox" value="1"';
         if (!empty($value))
             echo ' checked';
         echo '>';
-        echo $label;
+        echo esc_html($label);
         echo '</label>';
     }
 
@@ -686,8 +621,8 @@ class HyperCacheControls {
             $value = $this->options[$name];
         if (is_array($value))
             $value = implode("\n", $value);
-        echo '<textarea name="options[' . $name . ']" style="width: 100%; heigth: 120px;">';
-        echo htmlspecialchars($value);
+        echo '<textarea name="options[' . esc_attr($name) . ']" style="width: 100%; heigth: 120px;">';
+        echo esc_html($value);
         echo '</textarea>';
     }
 
@@ -696,22 +631,22 @@ class HyperCacheControls {
             $this->options[$name] = '';
         $value = $this->options[$name];
 
-        echo '<select name="options[' . $name . ']">';
+        echo '<select name="options[' . esc_attr($name) . ']">';
         foreach ($options as $key => $label) {
-            echo '<option value="' . $key . '"';
+            echo '<option value="' . esc_attr($key) . '"';
             if ($value == $key)
                 echo ' selected';
-            echo '>' . htmlspecialchars($label) . '&nbsp;&nbsp;</option>';
+            echo '>' . esc_html($label) . '&nbsp;&nbsp;</option>';
         }
         echo '</select>';
     }
 
     function button($action, $label, $message = null) {
         if ($message == null) {
-            echo '<input class="button-primary" type="submit" value="' . $label . '" onclick="this.form.act.value=\'' . $action . '\'"/>';
+            echo '<input class="button-primary" type="submit" value="' . esc_attr($label) . '" onclick="this.form.act.value=\'' . esc_attr($action) . '\'"/>';
         } else {
-            echo '<input class="button-primary" type="submit" value="' . $label . '" onclick="this.form.act.value=\'' . $action . '\';return confirm(\'' .
-            htmlspecialchars($message) . '\')"/>';
+            echo '<input class="button-primary" type="submit" value="' . esc_attr($label) . '" onclick="this.form.act.value=\'' . esc_attr($action) . '\';return confirm(\'' .
+            esc_attr($message) . '\')"/>';
         }
     }
 
@@ -734,16 +669,17 @@ class HyperCacheControls {
     function show() {
         if (!empty($this->errors)) {
             echo '<div class="error"><p>';
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
             echo $this->errors;
             echo '</p></div>';
         }
 
         if (!empty($this->messages)) {
             echo '<div class="updated"><p>';
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
             echo $this->messages;
             echo '</p></div>';
         }
     }
-
 }
 ?>

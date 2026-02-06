@@ -1,16 +1,18 @@
 <?php
 
+defined('ABSPATH') || exit;
+
 /*
   Plugin Name: Hyper Cache
   Plugin URI: https://www.satollo.net/plugins/hyper-cache
   Description: A easy to configure and efficient cache to increase the speed of your blog.
-  Version: 3.4.2
+  Version: 3.4.4
   Author: Stefano Lissa
   Author URI: https://www.satollo.net
   Disclaimer: Use at your own risk. No warranty expressed or implied is provided.
   Contributors: satollo
-  Requires PHP: 5.6
-  Requires at least: 4.6
+  Requires PHP: 7.0
+  Requires at least: 6.1
  */
 
 global $cache_stop;
@@ -23,8 +25,6 @@ class HyperCache {
     var $options;
     var $ob_started = false;
     static $instance;
-
-    const MOBILE_AGENTS = 'android|iphone|iemobile|up.browser|up.link|mmp|symbian|smartphone|midp|wap|phone|ipod|xoom|blackberry';
 
     function __construct() {
         self::$instance = $this;
@@ -46,13 +46,6 @@ class HyperCache {
         add_action('autoptimize_action_cachepurged', [$this, 'clean']);
 
         if (!is_admin()) {
-
-            // The function must exists or the advanced-cache.php has been removed
-            global $hyper_cache_is_mobile;
-            if ($hyper_cache_is_mobile && !empty($this->options['theme'])) {
-                add_filter('stylesheet', array($this, 'hook_get_stylesheet'));
-                add_filter('template', array($this, 'hook_get_template'));
-            }
             add_action('template_redirect', array($this, 'hook_template_redirect'), 0);
         } else {
             add_action('admin_menu', array($this, 'hook_admin_menu'));
@@ -62,9 +55,6 @@ class HyperCache {
 
     function hook_activate() {
 
-        if (!isset($this->options['mobile'])) {
-            $this->options['mobile'] = 0;
-        }
         if (!isset($this->options['folder'])) {
             $this->options['folder'] = '';
         }
@@ -73,9 +63,6 @@ class HyperCache {
         }
         if (!isset($this->options['clean_last_posts'])) {
             $this->options['clean_last_posts'] = 0;
-        }
-        if (!isset($this->options['mobile_agents'])) {
-            $this->options['mobile_agents'] = explode('|', self::MOBILE_AGENTS);
         }
         if (!isset($this->options['reject_agents'])) {
             $this->options['reject_agents'] = array();
@@ -138,8 +125,6 @@ class HyperCache {
 
     function build_advanced_cache() {
         $advanced_cache = file_get_contents(dirname(__FILE__) . '/advanced-cache.php');
-        $advanced_cache = str_replace('HC_MOBILE_AGENTS', implode('|', array_map('preg_quote', $this->options['mobile_agents'])), $advanced_cache);
-        $advanced_cache = str_replace('HC_MOBILE', $this->options['mobile'], $advanced_cache);
 
         $advanced_cache = str_replace('HC_REJECT_AGENTS_ENABLED', empty($this->options['reject_agents_enabled']) ? 0 : 1, $advanced_cache);
         $advanced_cache = str_replace('HC_REJECT_AGENTS', implode('|', array_map('preg_quote', $this->options['reject_agents'])), $advanced_cache);
@@ -264,10 +249,6 @@ class HyperCache {
             @unlink($dir . '/index.html.gz');
             @unlink($dir . '/index-https.html');
             @unlink($dir . '/index-https.html.gz');
-            @unlink($dir . '/index-mobile.html');
-            @unlink($dir . '/index-mobile.html.gz');
-            @unlink($dir . '/index-https-mobile.html');
-            @unlink($dir . '/index-https-mobile.html.gz');
 
             $this->remove_dir($dir . '/feed/');
             // Home subpages
@@ -313,32 +294,6 @@ class HyperCache {
         }
     }
 
-    /*
-     * Runs only if $hyper_cache_is_mobile is true
-     */
-
-    function hook_get_stylesheet($stylesheet = '') {
-        $theme = wp_get_theme($this->options['theme']);
-        if (!$theme->exists()) {
-            return $stylesheet;
-        }
-        return $theme->stylesheet;
-    }
-
-    /*
-     * Runs only if $hyper_cache_is_mobile is true
-     *
-     * var WP_Theme $theme
-     */
-
-    function hook_get_template($template) {
-        $theme = wp_get_theme($this->options['theme']);
-        if (!$theme->exists()) {
-            return $template;
-        }
-        return $theme->template;
-    }
-
     function hook_wp() {
         global $cache_stop, $hyper_cache_stop, $hyper_cache_group, $hc_host;
         if (is_404()) {
@@ -352,6 +307,7 @@ class HyperCache {
                     header('Content-Type: text/html;charset=UTF-8');
                     // For some reason it seems more performant than readfile...
                     header('X-Hyper-Cache: hit,404,wp');
+                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                     echo file_get_contents($file);
                     die();
                 }
@@ -414,6 +370,7 @@ class HyperCache {
                     header('Content-Type: text/html;charset=UTF-8');
                     // For some reason it seems more performant than readfile...
                     header('X-Hyper-Cache: hit,404,template_redirect');
+                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                     echo file_get_contents($file);
                     die();
                 }
@@ -482,10 +439,6 @@ class HyperCache {
         @unlink($dir . '/index.html.gz');
         @unlink($dir . '/index-https.html');
         @unlink($dir . '/index-https.html.gz');
-        @unlink($dir . '/index-mobile.html');
-        @unlink($dir . '/index-mobile.html.gz');
-        @unlink($dir . '/index-https-mobile.html');
-        @unlink($dir . '/index-https-mobile.html.gz');
 
         $this->remove_dir($dir . '/feed/');
         // Pagination
@@ -573,7 +526,7 @@ function hyper_cache_cdn_callback($matches) {
 }
 
 function hyper_cache_callback($buffer) {
-    global $cache_stop, $lite_cache, $hyper_cache_stop, $hyper_cache_group, $hyper_cache_is_mobile, $hyper_cache_gzip_accepted;
+    global $cache_stop, $lite_cache, $hyper_cache_stop, $hyper_cache_group, $hyper_cache_gzip_accepted;
 
     $buffer = trim($buffer);
 
@@ -614,19 +567,6 @@ function hyper_cache_callback($buffer) {
         $lc_dir = HyperCache::$instance->get_folder() . '/' . $host;
     } else {
         $lc_dir = HyperCache::$instance->get_folder() . '/' . $host . $uri;
-    }
-    if ($hyper_cache_is_mobile) {
-        // Bypass (should no need since there is that control on advanced-cache.php)
-        if ($options['mobile'] == 2) {
-            if (isset($options['gzip_on_the_fly']) && $hyper_cache_gzip_accepted && function_exists('gzencode')) {
-                header('Cache-Control: private, max-age=0, no-cache, no-transform', false);
-                header('Vary: Accept-Encoding,User-Agent');
-                header('Content-Encoding: gzip');
-                header('X-Hyper-Cache: mobile, gzip on the fly', false);
-                return gzencode($buffer, 9);
-            }
-            return $buffer;
-        }
     }
 
     if (is_404()) {

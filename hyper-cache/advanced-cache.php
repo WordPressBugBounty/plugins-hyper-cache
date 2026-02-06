@@ -1,26 +1,13 @@
 <?php
 
+defined('ABSPATH') || exit;
+
 global $cache_stop;
 $cache_stop = false;
-
-// Globally used. Here because of the function "theme change"
-if (defined('HYPER_CACHE_IS_MOBILE')) {
-    $hyper_cache_is_mobile = (bool)HYPER_CACHE_IS_MOBILE;
-} else if (defined('IS_PHONE')) {
-    $hyper_cache_is_mobile = IS_PHONE;
-} else {
-    $hyper_cache_is_mobile = preg_match('#(HC_MOBILE_AGENTS)#i', $_SERVER['HTTP_USER_AGENT']);
-}
 
 $hyper_cache_gzip_accepted = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false;
 
 $hyper_cache_is_bot = isset($_SERVER['HTTP_USER_AGENT']) && preg_match('#(googlebot)#i', $_SERVER['HTTP_USER_AGENT']);
-
-if (HC_MOBILE === 2 && $hyper_cache_is_mobile) {
-    hyper_cache_header('stop - mobile');
-    $cache_stop = true;
-    return false;
-}
 
 // Use this only if you can't or don't want to modify the .htaccess
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -117,9 +104,6 @@ if (HC_HTTPS === 1 && $hyper_cache_is_ssl) {
     $hyper_cache_group .= '-https';
 }
 
-//if (HC_MOBILE === 1 && $hyper_cache_is_mobile) {
-//    $hyper_cache_group .= '-mobile';
-//}
 
 $hc_uri = hyper_cache_sanitize_uri($_SERVER['REQUEST_URI']);
 $hc_host = hyper_cache_sanitize_host($_SERVER['HTTP_HOST']);
@@ -161,11 +145,7 @@ if (array_key_exists("HTTP_IF_MODIFIED_SINCE", $_SERVER)) {
 header('Content-Type: text/html;charset=UTF-8');
 header('Last-Modified: ' . gmdate("D, d M Y H:i:s", $hc_file_time) . ' GMT');
 
-//if (HC_MOBILE === 0) {
-    header('Vary: Accept-Encoding');
-//} else {
-//    header('Vary: Accept-Encoding,User-Agent');
-//}
+header('Vary: Accept-Encoding');
 
 if (HC_BROWSER_CACHE) {
     if (HC_BROWSER_CACHE_HOURS != 0) {
@@ -193,7 +173,7 @@ if ($hc_gzip) {
 }
 
 //if (HC_READFILE) {
-    readfile($hc_file);
+readfile($hc_file);
 //} else {
 //    echo file_get_contents($hc_file);
 //}

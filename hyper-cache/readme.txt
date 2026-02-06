@@ -1,7 +1,7 @@
 === Hyper Cache ===
-Tags: cache,performance,staticizer,apache,htaccess,tuning,speed,bandwidth,optimization
-Tested up to: 6.3.2
-Stable tag: 3.4.2
+Tags: cache, performance, speed
+Tested up to: 6.9
+Stable tag: 3.4.4
 Donate link: https://www.satollo.net/donations
 Contributors: satollo
 License: GPLv2 or later
@@ -17,17 +17,9 @@ It can be used in low resources hosting as well on high end servers.
 
 Hyper Cache is **purely PHP** and works on **every blog**: no complex configurations are needed and when you deactivate it no stale settings are left around.
 
-NOTE
-
-Mobile detection server side and serving different content to mobile and desktop device is now obsolete.
-Every modern WP theme deals with mobile/desktop contexts using the media queries, progressive enhancement and so on.
-So I don't see the need to keep the mobile/desktop cache separation and all the overhead in the plugin. The feature will be removed as version 3.5.
-
 Short list of features:
 
-* Mobile aware: double cache for desktop and mobile site versions
 * HTTPS ready
-* Mobile theme switch option: change the theme on mobile device detection
 * Able to serve expired pages to bots to increase the perceived blog speed by bots
 * Manages compression even on the fly for non cached pages
 * Lots of configurable bypasses: matching cookies, matching urls, user agents, ...
@@ -68,9 +60,18 @@ the [Hyper Cache official forum](https://www.satollo.net/forums/forum/hyper-cach
 
 2. Configuration of bypasses (things you want/not want to be cached)
 
-3. Mobile devices configuration
 
 == Changelog ==
+
+= 3.4.4 =
+
+* Readme changes
+* Removed separated mobile cache (obsolete)
+
+= 3.4.3 =
+
+* WP 6.9 check
+* PCP check
 
 = 3.4.2 =
 
